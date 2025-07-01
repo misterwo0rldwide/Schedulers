@@ -1,4 +1,5 @@
 #include "RBTree.h"
+#include "../../schedulers/CFS.h"
 
 template <class T>
 void deleteRBTree(RBNode<T>* node) {
@@ -11,14 +12,17 @@ void deleteRBTree(RBNode<T>* node) {
     delete node;
 }
 
-template <class T>
-void RBTree<T>::clear(void) {
-    deleteRBTree(this->getRoot());
+template <class T, class Compare>
+void RBTree<T, Compare>::clear(void) {
+    std::lock_guard<std::mutex> lock(mtx);
+
+    deleteRBTree<T>(this->getRoot());
     this->setRoot(nullptr);
+    this->setLeftMost(nullptr);
 }
 
-template <class T>
-void RBTree<T>::leftRotate(RBNode<T>* node) {
+template <class T, class Compare>
+void RBTree<T, Compare>::leftRotate(RBNode<T>* node) {
     RBNode<T>* right = node->right;
     node->right = right->left;
 
@@ -37,8 +41,8 @@ void RBTree<T>::leftRotate(RBNode<T>* node) {
     node->parent = right;
 }
 
-template <class T>
-void RBTree<T>::rightRotate(RBNode<T>* node) {
+template <class T, class Compare>
+void RBTree<T, Compare>::rightRotate(RBNode<T>* node) {
     RBNode<T>* left = node->left;
     node->left = left->right;
 
@@ -57,8 +61,8 @@ void RBTree<T>::rightRotate(RBNode<T>* node) {
     node->parent = left;
 }
 
-template <class T>
-void RBTree<T>::insert_fixup(RBNode<T>* node) {    
+template <class T, class Compare>
+void RBTree<T, Compare>::insert_fixup(RBNode<T>* node) {    
     while (node != this->root && node->parent && node->parent->getColor() == Color::RED) {
         if (node->parent == node->parent->parent->left) {
             RBNode<T>* uncle = node->parent->parent->right;
@@ -106,39 +110,49 @@ void RBTree<T>::insert_fixup(RBNode<T>* node) {
     this->root->setColor(Color::BLACK);
 }
 
-template <class T>
-void RBTree<T>::insert(const T& value) {
+template <class T, class Compare>
+void RBTree<T, Compare>::insert(const T& value) {
+    std::lock_guard<std::mutex> lock(mtx);
+
     RBNode<T>* tmp = nullptr;
     RBNode<T>* node = this->getRoot();
 
     while (node) {
         tmp = node;
-        if (value < node->getValue())
+        if (comp(value, node->getValue()))
             node = node->left;
         else
             node = node->right;
     }
 
     RBNode<T>* newNode = new RBNode<T>(value, nullptr, nullptr, tmp, Color::RED);
-    if (!tmp)
+    if (!tmp) {
         this->setRoot(newNode);
-    else if (value < tmp->getValue())
+        this->setLeftMost(newNode);
+    }
+    else if (comp(value, tmp->getValue())) {
         tmp->left = newNode;
-    else
+        if (tmp == this->getLeftMost())
+            this->setLeftMost(newNode);
+    }
+    else {
         tmp->right = newNode;
+    }
     
+    this->total_weight += prioNice::get_nice_weight(node->getValue()->getNice());
     this->insert_fixup(newNode);
 }
 
-template <class T>
-RBNode<T>* RBTree<T>::search(const T& value) const {
+template <class T, class Compare>
+RBNode<T>* RBTree<T, Compare>::search(const T& value) const {
+    std::lock_guard<std::mutex> lock(mtx);
+
     RBNode<T>* tmp = this->getRoot();
 
-    // RBTree is also a binary tree so we would search like a normal binary tree
     while (tmp) {
-        if (value > tmp->getValue())
+        if (comp(tmp->getValue(), value)) 
             tmp = tmp->right;
-        else if (value < tmp->getValue())
+        else if (comp(value, tmp->getValue()))
             tmp = tmp->left;
         else
             break;
@@ -147,8 +161,8 @@ RBNode<T>* RBTree<T>::search(const T& value) const {
     return tmp;
 }
 
-template <class T>
-void RBTree<T>::transplant(RBNode<T>* u, RBNode<T>* v) {
+template <class T, class Compare>
+void RBTree<T, Compare>::transplant(RBNode<T>* u, RBNode<T>* v) {
     if (u->parent == nullptr)
         this->root = v;
     else if (u == u->parent->left)
@@ -156,21 +170,20 @@ void RBTree<T>::transplant(RBNode<T>* u, RBNode<T>* v) {
     else
         u->parent->right = v;
     
-    // FIX: Check if v is not null before setting parent
     if (v)
         v->parent = u->parent;
 }
 
-template <class T>
-RBNode<T>* RBTree<T>::minimum(RBNode<T>* node) const {
+template <class T, class Compare>
+RBNode<T>* RBTree<T, Compare>::minimum(RBNode<T>* node) const {
     while (node->left)
         node = node->left;
     
     return node;
 }
 
-template <class T>
-void RBTree<T>::remove_fixup(RBNode<T>* node) {
+template <class T, class Compare>
+void RBTree<T, Compare>::remove_fixup(RBNode<T>* node) {
     RBNode<T>* tmp;
     
     while (node != this->root && node && node->getColor() == Color::BLACK) {
@@ -250,19 +263,40 @@ void RBTree<T>::remove_fixup(RBNode<T>* node) {
         node->setColor(Color::BLACK);
 }
 
-template <class T>
-void RBTree<T>::remove(RBNode<T>* node) {
+template <class T, class Compare>
+void RBTree<T, Compare>::remove(RBNode<T>* node) {
+    std::lock_guard<std::mutex> lock(mtx);
+
     RBNode<T>* tmp;
     RBNode<T>* minRightNode;
-    Color min_orig_color = Color::RED;
+    Color min_orig_color = node->getColor();
+    
+    size_t node_weight = prioNice::get_nice_weight(node->getValue()->getNice());
+    bool removingLeftMost = (node == this->getLeftMost());
 
     if (node->left == nullptr) {
         tmp = node->right;
         this->transplant(node, node->right);
+        
+        if (removingLeftMost) {
+            if (node->right) {
+                this->setLeftMost(this->minimum(node->right));
+            } else {
+                RBNode<T>* current = node->parent;
+                while (current && current->left == nullptr) {
+                    current = current->parent;
+                }
+                this->setLeftMost(current);
+            }
+        }
     }
     else if (node->right == nullptr) {
         tmp = node->left;
         this->transplant(node, node->left);
+        
+        if (removingLeftMost) {
+            this->setLeftMost(node->left);
+        }
     }
     else {
         minRightNode = this->minimum(node->right);
@@ -284,14 +318,19 @@ void RBTree<T>::remove(RBNode<T>* node) {
         minRightNode->left->parent = minRightNode;
         minRightNode->setColor(node->getColor());
     }
-    delete node;
+    
+    if (this->root == nullptr) {
+        this->setLeftMost(nullptr);
+    }
+    this->total_weight -= node_weight;
 
+    delete node;
     if (min_orig_color == Color::BLACK)
         this->remove_fixup(tmp);
 }
 
-template <class T>
-bool RBTree<T>::remove(const T& value) {
+template <class T, class Compare>
+bool RBTree<T, Compare>::remove(const T& value) {
     RBNode<T>* node = this->search(value);
 
     if (!node)
@@ -301,18 +340,17 @@ bool RBTree<T>::remove(const T& value) {
     return true;
 }
 
-typedef int Process;
 
-template class RBTree<Process>;
-template void deleteRBTree<Process>(RBNode<Process>*);
-template void RBTree<Process>::clear(void);
-template void RBTree<Process>::leftRotate(RBNode<Process>*);
-template void RBTree<Process>::rightRotate(RBNode<Process>*);
-template void RBTree<Process>::insert_fixup(RBNode<Process>*);
-template void RBTree<Process>::insert(const Process&);
-template RBNode<Process>* RBTree<Process>::search(const Process&) const;
-template void RBTree<Process>::transplant(RBNode<Process>* u, RBNode<Process>* v);
-template RBNode<Process>* RBTree<Process>::minimum(RBNode<Process>* node) const;
-template void RBTree<Process>::remove_fixup(RBNode<Process>* node);
-template void RBTree<Process>::remove(RBNode<Process>* node);
-template bool RBTree<Process>::remove(const Process& value);
+template class RBTree<Task*, TimeCmp>;
+template void deleteRBTree<Task*>(RBNode<Task*>*);
+template void RBTree<Task*, TimeCmp>::clear(void);
+template void RBTree<Task*, TimeCmp>::leftRotate(RBNode<Task*>* node);
+template void RBTree<Task*, TimeCmp>::rightRotate(RBNode<Task*>*);
+template void RBTree<Task*, TimeCmp>::insert_fixup(RBNode<Task*>*);
+template void RBTree<Task*, TimeCmp>::insert(Task* const&);
+template RBNode<Task*>* RBTree<Task*, TimeCmp>::search(Task* const&) const;
+template void RBTree<Task*, TimeCmp>::transplant(RBNode<Task*>*, RBNode<Task*>*);
+template RBNode<Task*>* RBTree<Task*, TimeCmp>::minimum(RBNode<Task*>*) const;
+template void RBTree<Task*, TimeCmp>::remove_fixup(RBNode<Task*>*);
+template void RBTree<Task*, TimeCmp>::remove(RBNode<Task*>*);
+template bool RBTree<Task*, TimeCmp>::remove(Task* const&);
