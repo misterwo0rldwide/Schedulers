@@ -27,5 +27,6 @@ It uses C++ polymorphism to provide a flexible design where schedulers share a c
 ## Build & Run
 
 ```bash
+cmake
 make
 ./cfs_scheduler
