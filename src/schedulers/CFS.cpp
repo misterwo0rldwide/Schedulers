@@ -32,7 +32,6 @@ void CFS::schedule(void) {
     size_t vruntime_increment = static_cast<size_t>(actual_runtime * (static_cast<double>(NICE_0_LOAD) / taskWeight));
     vruntime_increment = std::min(vruntime_increment, static_cast<size_t>(MAX_TIMESLICE));
 
-    task->time += actual_runtime;
     task->addVruntime(vruntime_increment);
 
     // Check if task should be removed (exceeded max CPU time)
@@ -63,9 +62,9 @@ void CFS::remove(Task* t) {
 
 // Returns wether we need to remove this process
 bool CFS::update(Task* t, int64_t physical_time) {
-    if (!t)
-        return true;
+    if (!t) return true;
 
+	t->time += physical_time;
     return t->time > MAX_CPU_TIME;
 }
 

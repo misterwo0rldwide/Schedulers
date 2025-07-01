@@ -3,6 +3,8 @@
 #include <functional>
 #include <mutex>
 
+#include "../../process/task.h"
+
 enum class Color: char {RED = 0, BLACK = 1};
 
 template <class T>
@@ -15,8 +17,8 @@ public:
     RBNode<T>* right;
     RBNode<T>* parent;
 
-    RBNode(T value, RBNode<T>* left, RBNode<T>* right, RBNode<T>* parent, Color color): 
-        value(value), left(left), right(right), parent(parent), color(color) {}
+	RBNode(T value, RBNode<T>* left, RBNode<T>* right, RBNode<T>* parent, Color color): 
+		value(value), color(color), left(left), right(right), parent(parent) {}
     ~RBNode() = default;
 
     // Getters
@@ -70,3 +72,5 @@ private:
     RBNode<T>* minimum(RBNode<T>* node) const;
     void remove_fixup(RBNode<T>* node);
 };
+
+extern template class RBTree<Task*, TimeCmp>;

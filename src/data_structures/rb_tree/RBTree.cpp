@@ -342,15 +342,3 @@ bool RBTree<T, Compare>::remove(const T& value) {
 
 
 template class RBTree<Task*, TimeCmp>;
-template void deleteRBTree<Task*>(RBNode<Task*>*);
-template void RBTree<Task*, TimeCmp>::clear(void);
-template void RBTree<Task*, TimeCmp>::leftRotate(RBNode<Task*>* node);
-template void RBTree<Task*, TimeCmp>::rightRotate(RBNode<Task*>*);
-template void RBTree<Task*, TimeCmp>::insert_fixup(RBNode<Task*>*);
-template void RBTree<Task*, TimeCmp>::insert(Task* const&);
-template RBNode<Task*>* RBTree<Task*, TimeCmp>::search(Task* const&) const;
-template void RBTree<Task*, TimeCmp>::transplant(RBNode<Task*>*, RBNode<Task*>*);
-template RBNode<Task*>* RBTree<Task*, TimeCmp>::minimum(RBNode<Task*>*) const;
-template void RBTree<Task*, TimeCmp>::remove_fixup(RBNode<Task*>*);
-template void RBTree<Task*, TimeCmp>::remove(RBNode<Task*>*);
-template bool RBTree<Task*, TimeCmp>::remove(Task* const&);

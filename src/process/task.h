@@ -5,14 +5,6 @@
 
 #define MAX_CPU_TIME (1000)
 
-class Task;
-
-struct TimeCmp {
-    bool operator()(const Task* a, const Task* b) const {
-        return a->getVruntime() < b->getVruntime();
-    }
-};
-
 
 class Task {
 private:
@@ -33,4 +25,10 @@ public:
     void setNice(int8_t nice) { this->nice = nice; }
     void setVruntime(uint64_t vrt) { this->vruntime = vrt; }
     void addVruntime(uint64_t vrt) { this->vruntime += vrt; }
+};
+
+struct TimeCmp {
+    bool operator()(const Task* a, const Task* b) const {
+        return a->getVruntime() < b->getVruntime();
+    }
 };
