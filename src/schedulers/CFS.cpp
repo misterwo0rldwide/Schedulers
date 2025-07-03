@@ -20,10 +20,12 @@ void CFS::schedule(void) {
     if (totalWeight == 0)
         return;
 
+    // Calculate max given time by cpu to task
     double time_slice = TARGET_LATENCY * (static_cast<double>(taskWeight) / totalWeight);
     if (time_slice <= 0)
         return;
 
+    // Randomize task given time like it is being interrupted mid run
     static std::random_device rd;
     static std::mt19937 gen(rd());
     std::uniform_int_distribution<size_t> dis(1, static_cast<size_t>(time_slice) + 1);

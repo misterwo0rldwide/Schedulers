@@ -10,19 +10,19 @@
 #define NICE_0_LOAD (1024)
 
 class CFS : public Scheduler {
-private:
-    RBTree<Task*, TimeCmp> processes;
-public:
-    CFS() = default;
-    ~CFS() override = default;
+    private:
+        RBTree<Task*, TimeCmp> processes;
+    public:
+        CFS() = default;
+        ~CFS() override = default;
 
-    void schedule(void) override;
-    void add(Task* t) override;
-    void remove(Task* t) override;
+        void schedule(void) override;
+        void add(Task* t) override;
+        void remove(Task* t) override;
 
-protected:
-    bool update(Task* t, int64_t time) override;
-    void requeue(void) override;
+    protected:
+        bool update(Task* t, int64_t time) override;
+        void requeue(void) override;
 };
 
 class prioNice {
