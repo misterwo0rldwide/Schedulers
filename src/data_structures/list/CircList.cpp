@@ -2,11 +2,16 @@
 
 template <class T>
 CircList<T>::CircList(T value) {
-    this->head = this->last = new Node<T>(value);
-    
-    // Make it circular - node points to itself
-    this->head->setNext(this->head);
-    this->head->setPrev(this->head);
+    if (value == nullptr) {
+        this->head = this->last = nullptr;
+    } else {
+        // Create the first node
+        this->head = this->last = new Node<T>(value);
+        
+        // Make it circular - node points to itself
+        this->head->setNext(this->head);
+        this->head->setPrev(this->head);
+    }
 }
 
 template <class T>
@@ -51,7 +56,7 @@ void CircList<T>::insert(T value) {
 
 template <class T>
 Node<T>* CircList<T>::search(T value) const {
-    if (!head) return nullptr;
+    if (!this->head) return nullptr;
     
     Node<T>* tmp = this->head;
     do {
@@ -94,3 +99,5 @@ void CircList<T>::remove(T value) {
     if (node)
         this->remove(node);
 }
+
+template class CircList<Task *>;

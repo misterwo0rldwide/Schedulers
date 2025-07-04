@@ -12,7 +12,8 @@ private:
     int8_t nice;
     uint64_t vruntime;
 public:
-    uint64_t time; 
+    // Specificly signed for negative values
+    int64_t time;
 
     Task(std::string name, int8_t nice, uint64_t time = 0, uint64_t vruntime = 0)
         : name(name), nice(nice), vruntime(vruntime), time(time) {}

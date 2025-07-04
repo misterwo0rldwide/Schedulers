@@ -16,7 +16,7 @@ class CFS : public Scheduler {
         CFS() = default;
         ~CFS() override = default;
 
-        void schedule(void) override;
+        bool schedule(void) override;
         void add(Task* t) override;
         void remove(Task* t) override;
 

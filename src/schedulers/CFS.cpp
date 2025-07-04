@@ -6,24 +6,27 @@
 #include "../process/task.h"
 #include "../data_structures/rb_tree/RBTree.h"
 
-void CFS::schedule(void) {
+bool CFS::schedule(void) {
     RBNode<Task*>* node = this->processes.getLeftMost();
     if (!node)
-        return;
+        return false;
     
     Task* task = node->getValue();
-    if (!task)
-        return;
+    if (!task) {
+        this->processes.remove(node);
+        return this->processes.getLeftMost() != nullptr;
+    }
 
     size_t taskWeight = prioNice::get_nice_weight(task->getNice());
     size_t totalWeight = this->processes.getTotalWeight();
     if (totalWeight == 0)
-        return;
+        return false;
 
-    // Calculate max given time by cpu to task
     double time_slice = TARGET_LATENCY * (static_cast<double>(taskWeight) / totalWeight);
-    if (time_slice <= 0)
-        return;
+    if (time_slice <= 0) {
+        this->processes.remove(node);
+        return this->processes.getLeftMost() != nullptr;
+    }
 
     // Randomize task given time like it is being interrupted mid run
     static std::random_device rd;
@@ -41,6 +44,8 @@ void CFS::schedule(void) {
         this->processes.remove(node);
     else
         this->requeue();
+
+    return this->processes.getLeftMost() != nullptr;
 }
 
 

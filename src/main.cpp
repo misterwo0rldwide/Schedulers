@@ -1,11 +1,13 @@
-#include <iostream>
 #include <string>
+#include <iostream>
+
+#include "http/server.h"
 
 int main(void) {
-	std::string itzik;
-	std::cout << "What's your name: ";
-	std::cin >> itzik;
-	
-	std::cout << "Oh cool, your name is " << itzik << std::endl;
-	return 0;
+    HttpServer server;
+
+    server.recvClients();
+    std::cout << "Bye Bye" << std::endl;
+
+    return 0;
 }

@@ -1,5 +1,6 @@
-
 #pragma once
+
+#include "../../process/task.h"
 
 template <class T>
 class Node {
@@ -34,6 +35,7 @@ class CircList {
         void insert(T value);
         void remove(T value);
         void remove(Node<T>* node);
-    private:
         Node<T>* search(T value) const;
 };
+
+extern template class CircList<Task *>;
