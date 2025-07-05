@@ -1,14 +1,14 @@
 #pragma once
 
-#include <thread>
-#include <mutex>
-#include <vector>
-#include <string>
+#define MAX_LENGTH (1024)
+
+#define SERVER_PORT (8080)
+#define SERVER_LISTEN (5)
 
 class HttpServer {
     private:
+        bool serverOn;
         int serverSocket;
-        std::vector<std::thread> clientsThreads;
     public:
         HttpServer();
         ~HttpServer();
