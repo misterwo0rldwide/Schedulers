@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mutex>
 #include "../../process/task.h"
 
 template <class T>
@@ -26,6 +27,8 @@ class CircList {
     private:
         Node<T>* head;
         Node<T>* last;
+
+        mutable std::mutex mtx;
     public:
         CircList(T value);
         ~CircList();

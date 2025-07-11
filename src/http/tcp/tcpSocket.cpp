@@ -2,44 +2,81 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <iostream>
+#include <vector>
+#include <errno.h>
+#include <cstring>
+#include <unistd.h>
 
 #include "tcpSocket.h"
 #include "../httpHeaders.h"
 
 int createServerSocket(int port, int serverListen) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    
+    if (sock < 0) {
+        return -1;
+    }
+
+    int opt = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        close(sock);
+        return -1;
+    }
+
     sockaddr_in serverAddress;
+    memset(&serverAddress, 0, sizeof(serverAddress));
+
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
 
-    bind(this->serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
-    listen(this->serverSocket, serverListen);
-    
+    if (bind(sock, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
+        close(sock);
+        return -1;
+    }
+
+    if (listen(sock, serverListen) < 0) {
+        close(sock);
+        return -1;
+    }
+
     return sock;
 }
 
-size_t sendBySizeHttp(int sock, const std::string& response) {
-    size_t reponseLength = 0;
-    size_t tmpLength;
+int acceptClientSocket(int sock) {
+    return accept(sock, nullptr, nullptr);
+}
 
-    while (reponseLength < response.size()) {
-        tmpLength = send(sock, response.data() + reponseLength, PACKET_BLOCK_SIZE, 0);
+ssize_t sendBySizeHttp(int sock, const std::string& response) {
+    size_t totalSent = 0;
+    const char* data = response.data();
+    size_t remaining = response.size();
 
-        if (tmpLength <= 0)
+    while (remaining > 0) {
+        size_t chunkSize = std::min(remaining, static_cast<size_t>(PACKET_BLOCK_SIZE));
+        ssize_t bytesSent = send(sock, data + totalSent, chunkSize, MSG_NOSIGNAL);
+
+        if (bytesSent < 0) {
+            std::cerr << "Send failed: " << strerror(errno) << std::endl;
             return -1;
+        }
         
-        reponseLength += tmpLength;
+        if (bytesSent == 0) {
+            std::cerr << "Connection closed by peer during send" << std::endl;
+            return -1;
+        }
+        
+        totalSent += bytesSent;
+        remaining -= bytesSent;
     }
-    return reponseLength;
+    
+    return static_cast<ssize_t>(totalSent);
 }
 
 std::string recvBySizeHttp(int sock) {
     char headersBuf[PACKET_BLOCK_SIZE * 2] = { 0 };
     ssize_t headersLength = 0, tmpLength = 0;
 
-    while (headersLength < sizeof(headersBuf)) {
+    while (headersLength < static_cast<ssize_t>(sizeof(headersBuf))) {
         tmpLength = recv(sock, headersBuf + headersLength, PACKET_BLOCK_SIZE, 0);
 
         if (tmpLength <= 0)
@@ -89,4 +126,9 @@ std::string recvBySizeHttp(int sock) {
     }
 
     return response + body;
+}
+
+void closeSocket(int sock) {
+    if (sock)
+        close(sock);
 }

@@ -16,6 +16,7 @@ CircList<T>::CircList(T value) {
 
 template <class T>
 CircList<T>::~CircList() {
+    std::lock_guard<std::mutex> lock(mtx);
     if (!this->head) return;
     
     // Break the circle first
@@ -37,6 +38,7 @@ Node<T>* CircList<T>::getHead(void) const noexcept {
 
 template <class T>
 void CircList<T>::insert(T value) { 
+    std::lock_guard<std::mutex> lock(mtx);
     Node<T>* node = new Node<T>(value);
     
     if (!this->head) {
@@ -56,6 +58,7 @@ void CircList<T>::insert(T value) {
 
 template <class T>
 Node<T>* CircList<T>::search(T value) const {
+    std::lock_guard<std::mutex> lock(mtx);
     if (!this->head) return nullptr;
     
     Node<T>* tmp = this->head;
@@ -70,6 +73,7 @@ Node<T>* CircList<T>::search(T value) const {
 
 template <class T>
 void CircList<T>::remove(Node<T>* node) {
+    std::lock_guard<std::mutex> lock(mtx);
     if (!node || !this->head) return;
     
     // Only one node in the list

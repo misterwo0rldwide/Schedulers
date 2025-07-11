@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scheduler Visualizer</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>CPU Scheduler Visualizer</h1>
+
+    <div class="input-panel">
+      <input type="text" id="pid-input" placeholder="Process Name (PID)">
+      <input type="number" id="burst-input" placeholder="Burst Time (ms)">
+      <select id="scheduler-type">
+        <option value="rr">Round Robin</option>
+        <option value="cfs">Completely Fair Scheduler</option>
+      </select>
+      <button id="add-btn">+ Add Process</button>
+      <button id="start-btn">Start</button>
+    </div>
+
+    <div class="view-area">
+      <div id="rr-view" style="display:none">
+        <h2>Round Robin Queue</h2>
+        <svg id="rr-svg" width="800" height="150"></svg>
+        <div class="process-info" id="rr-info">Running: IDLE</div>
+      </div>
+
+      <div id="cfs-view" style="display:none">
+        <h2>CFS Red-Black Tree</h2>
+        <svg id="cfs-svg" width="800" height="300"></svg>
+        <div class="process-info" id="cfs-info">Running: IDLE</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="scheduler.js"></script>
+</body>
+</html>

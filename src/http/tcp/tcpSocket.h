@@ -7,5 +7,7 @@
 
 //int createClientSocket()
 int createServerSocket(int port, int serverListen);
-int sendBySizeHttp(int sock, std::string);
-char* recvBySizeHttp(int sock)
+int acceptClientSocket(int sock);
+ssize_t sendBySizeHttp(int sock, const std::string& str);
+std::string recvBySizeHttp(int sock);
+void closeSocket(int sock);
